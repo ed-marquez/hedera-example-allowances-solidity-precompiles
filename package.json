@@ -1,0 +1,16 @@
+{
+	"name": "hedera-example-allowances-solidity-precompiles",
+	"version": "1.0.0",
+	"description": "",
+	"main": "0_test_precompile_FT.js",
+	"type": "module",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"@hashgraph/sdk": "^2.18.3",
+		"dotenv": "^16.0.3"
+	}
+}
