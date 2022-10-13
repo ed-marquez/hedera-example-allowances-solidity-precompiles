@@ -40,6 +40,17 @@ contract test is HederaTokenService {
         // return responseCode;
     }
 
+    function ftTransferApproved(address _tokenAddress, address _owner, address _receiver, int64 _amount) external returns (int) {
+        // int responseCode = HederaTokenService.approve(_tokenAddress, _spender, _amount); 
+        htsPrecompiles.delegatecall(abi.encodeWithSelector(IHederaTokenService.transferToken.selector, _tokenAddress, _owner, _receiver, _amount)); 
+        
+        // if (responseCode != HederaResponseCodes.SUCCESS) {
+        //     // revert ("allowance Failed");
+        //     return responseCode;
+        // }
+        // return responseCode;
+    }
+
     function getAllowance4Ft(address _tokenAddress, address _owner, address _spender) external returns (uint256) {
         (int responseCode, uint256 amount) = HederaTokenService.allowance(_tokenAddress, _owner, _spender); 
         if (responseCode != HederaResponseCodes.SUCCESS) {

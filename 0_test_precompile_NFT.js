@@ -37,7 +37,7 @@ client.setDefaultMaxTransactionFee(new Hbar(100));
 async function main() {
 	// STEP 1 ===================================
 	console.log(`STEP 1 ===================================`);
-	const bytecode = fs.readFileSync("./0_test_sol_test.bin");
+	const bytecode = fs.readFileSync("./binaries/0_test_sol_test.bin");
 
 	const initBalance = new Hbar(10);
 	const aliceKey = PrivateKey.generateED25519();
@@ -71,46 +71,6 @@ async function main() {
 	const contractAddress = contractId.toSolidityAddress();
 	console.log(`- The smart contract ID is: ${contractId}`);
 	console.log(`- The smart contract ID in Solidity format is: ${contractAddress} \n`);
-
-	// const tokenAssociateTx = new TokenAssociateTransaction()
-	// 	.setTokenIds([tokenId])
-	// 	.setAccountId(aliceId)
-	// 	.freezeWith(client);
-	// const tokenAssociateSign = await tokenAssociateTx.sign(aliceKey);
-	// const tokenAssociateSubmit = await tokenAssociateSign.execute(client);
-	// const tokenAssociateRx = await tokenAssociateSubmit.getReceipt(client);
-	// console.log(`- Alice associated with token: ${tokenAssociateRx.status}`);
-
-	// const tokenAssociateTxBob = new TokenAssociateTransaction()
-	// 	.setTokenIds([tokenId])
-	// 	.setAccountId(bobId)
-	// 	.freezeWith(client);
-	// const tokenAssociateSignBob = await tokenAssociateTxBob.sign(bobKey);
-	// const tokenAssociateSubmitBob = await tokenAssociateSignBob.execute(client);
-	// const tokenAssociateRxBob = await tokenAssociateSubmitBob.getReceipt(client);
-	// console.log(`- Bob associated with token: ${tokenAssociateRxBob.status}`);
-
-	// // Execute a contract function
-	// const contractExecTx0 = new ContractExecuteTransaction()
-	// 	.setContractId(contractId)
-	// 	.setGas(3000000)
-	// 	.setFunction(
-	// 		"tokenAssociate",
-	// 		new ContractFunctionParameters()
-	// 			.addAddress(aliceId.toSolidityAddress())
-	// 			.addAddress(tokenAddressSol)
-	// 	)
-	// 	.freezeWith(client);
-	// const contractExecSign0 = await contractExecTx0.sign(aliceKey);
-	// const contractExecSubmit0 = await contractExecSign0.execute(client);
-	// const contractExecRec0 = await contractExecSubmit0.getRecord(client);
-	// const recQuery0 = await new TransactionRecordQuery()
-	// 	.setTransactionId(contractExecRec0.transactionId)
-	// 	.setIncludeChildren(true)
-	// 	.execute(client);
-	// console.log(
-	// 	`\n- Contract call for Association (check in Hashscan): ${recQuery0.receipt.status.toString()}`
-	// );
 
 	let nft2Send = new NftId(tokenId, 2);
 
