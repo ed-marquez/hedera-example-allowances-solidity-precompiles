@@ -8,7 +8,7 @@ import "./hip-206/ExpiryHelper.sol";
 import "./hip-206/FeeHelper.sol";
 import "./hip-206/KeyHelper.sol";
 
-contract test is HederaTokenService {
+contract ApproveAllowances is HederaTokenService {
     address htsPrecompiles = address(0x167);
 
     function tokenAssociate(address _account, address _tokenAddress) external returns (int){
@@ -30,25 +30,11 @@ contract test is HederaTokenService {
     //============================================ 
     
     function approveFt( address _tokenAddress, address _spender, uint256 _amount) external returns (int) {
-        // int responseCode = HederaTokenService.approve(_tokenAddress, _spender, _amount); 
         htsPrecompiles.delegatecall(abi.encodeWithSelector(IHederaTokenService.approve.selector,_tokenAddress, _spender, _amount)); 
-        
-        // if (responseCode != HederaResponseCodes.SUCCESS) {
-        //     // revert ("allowance Failed");
-        //     return responseCode;
-        // }
-        // return responseCode;
     }
 
-    function ftTransferApproved(address _tokenAddress, address _owner, address _receiver, int64 _amount) external returns (int) {
-        // int responseCode = HederaTokenService.approve(_tokenAddress, _spender, _amount); 
-        htsPrecompiles.delegatecall(abi.encodeWithSelector(IHederaTokenService.transferToken.selector, _tokenAddress, _owner, _receiver, _amount)); 
-        
-        // if (responseCode != HederaResponseCodes.SUCCESS) {
-        //     // revert ("allowance Failed");
-        //     return responseCode;
-        // }
-        // return responseCode;
+    function ftTransferApproved(address _tokenAddress, address _owner, address _receiver, uint256 _amount) external returns (int) {
+        htsPrecompiles.delegatecall(abi.encodeWithSelector(IHederaTokenService.transferFrom.selector, _tokenAddress, _owner, _receiver, _amount)); 
     }
 
     function getAllowance4Ft(address _tokenAddress, address _owner, address _spender) external returns (uint256) {
@@ -65,14 +51,7 @@ contract test is HederaTokenService {
     //============================================ 
 
     function approveNft(address _tokenAddress, address _spender, uint256 _serialNumber) external returns (int) {
-        // int responseCode = HederaTokenService.approveNFT(_tokenAddress, _spender, _serialNumber); 
         htsPrecompiles.delegatecall(abi.encodeWithSelector(IHederaTokenService.approveNFT.selector,_tokenAddress, _spender, _serialNumber)); 
-
-        // if (responseCode != HederaResponseCodes.SUCCESS) {
-        //     // revert ("allowance Failed");
-        //     return responseCode;
-        // }
-        // return responseCode;
     }
 
     function approveAllNfts(address _tokenAddress, address _spender, bool _approveOrRevoke) external returns (int) {
@@ -84,6 +63,10 @@ contract test is HederaTokenService {
         return responseCode;
     }
     
+    function nftTransferApproved(address _tokenAddress, address _owner, address _receiver, uint256 _serial) external returns (int) {
+        htsPrecompiles.delegatecall(abi.encodeWithSelector(IHederaTokenService.transferFromNFT.selector, _tokenAddress, _owner, _receiver, _serial)); 
+    }
+
     // Queries
     function getApprovedAddress4Nft(address _tokenAddress, uint256 _serialNumber) external returns (address) {
         (int responseCode , address approved) = HederaTokenService.getApproved(_tokenAddress, _serialNumber); 
@@ -102,7 +85,4 @@ contract test is HederaTokenService {
         }
         return approved;
     }
-
-
-
 }

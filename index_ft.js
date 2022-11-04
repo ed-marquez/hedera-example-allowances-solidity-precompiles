@@ -1,15 +1,14 @@
 console.clear();
-import { Client, AccountId, PrivateKey, Hbar } from "@hashgraph/sdk";
+import { Client, AccountId, PrivateKey, Hbar, ContractFunctionParameters } from "@hashgraph/sdk";
 
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-require("dotenv").config();
+import dotenv from "dotenv";
+dotenv.config();
+import fs from "fs";
 
 import accountCreateFcn from "./utils/accountCreate.js";
-import * as approvals from "./utils/allowanceApprovals.js";
-import * as transfers from "./utils/allowanceTransfers.js";
 import * as queries from "./utils/queries.js";
 import * as htsTokens from "./utils/tokenOperations.js";
+import * as contracts from "./utils/contractOperations.js";
 
 const operatorId = AccountId.fromString(process.env.OPERATOR_ID);
 const operatorKey = PrivateKey.fromString(process.env.OPERATOR_PVKEY);
@@ -19,8 +18,9 @@ client.setDefaultMaxTransactionFee(new Hbar(100));
 async function main() {
 	// STEP 1 ===================================
 	console.log(`\nSTEP 1 ===================================\n`);
-	console.log(`- Creating Hedera accounts and HTS token...\n`);
+	console.log(`- Creating Hedera accounts, HTS token, and contract...\n`);
 
+	// Accounts
 	const initBalance = new Hbar(10);
 	const treasuryKey = PrivateKey.generateED25519();
 	const [treasurySt, treasuryId] = await accountCreateFcn(treasuryKey, initBalance, client);
@@ -32,18 +32,39 @@ async function main() {
 	const [bobSt, bobId] = await accountCreateFcn(bobKey, initBalance, client);
 	console.log(`- Bob's account: https://hashscan.io/#/testnet/account/${bobId}`);
 
+	//Token
 	const [tokenId, tokenInfo] = await htsTokens.createFtFcn("HBAR ROCKS", "HROCK", 100, treasuryId, treasuryKey, client);
+	const tokenAddressSol = tokenId.toSolidityAddress();
 	console.log(`\n- Token ID: ${tokenId}`);
+	console.log(`- Token ID in Solidity format: ${tokenAddressSol}`);
 	console.log(`- Initial token supply: ${tokenInfo.totalSupply.low}`);
+
+	// Contract
+	// Import the compiled contract bytecode
+	const bytecode = fs.readFileSync("./binaries/ApproveAllowances.bin");
+	let gasLim = 100000;
+	const [contractId, contractAddress] = await contracts.deployContractFcn(bytecode, gasLim, client);
+	console.log(`\n- Contract ID: ${contractId}`);
+	console.log(`- Contract ID in Solidity address format: ${contractAddress}`);
 
 	// STEP 2 ===================================
 	console.log(`\nSTEP 2 ===================================\n`);
 	console.log(`- Treasury approving fungible token allowance for Alice...\n`);
 
+	gasLim = 4000000;
 	let allowBal = 50;
-	const allowanceApproveFtRx = await approvals.ftAllowanceFcn(tokenId, treasuryId, aliceId, allowBal, treasuryKey, client);
-	console.log(`- Allowance approval status: ${allowanceApproveFtRx.status}`);
-	console.log(`- https://testnet.mirrornode.hedera.com/api/v1/accounts/${treasuryId}/allowances/tokens \n`);
+	const allowanceApproveFtParams = new ContractFunctionParameters()
+		.addAddress(tokenAddressSol)
+		.addAddress(aliceId.toSolidityAddress())
+		.addUint256(allowBal);
+
+	client.setOperator(treasuryId, treasuryKey);
+	const allowanceApproveFtRec = await contracts.executeContractFcn(contractId, "approveFt", allowanceApproveFtParams, gasLim, client);
+	client.setOperator(operatorId, operatorKey);
+	console.log(`- Contract call for FT allowance approval: ${allowanceApproveFtRec.receipt.status}`);
+
+	const [allowanceApproveFtInfo, allowanceApproveFtExpUrl] = await queries.mirrorTxQueryFcn(allowanceApproveFtRec.transactionId);
+	console.log(`- See details: ${allowanceApproveFtExpUrl} \n`);
 
 	await queries.balanceCheckerFcn(treasuryId, tokenId, client);
 	await queries.balanceCheckerFcn(aliceId, tokenId, client);
@@ -52,9 +73,20 @@ async function main() {
 	// STEP 3 ===================================
 	console.log(`\nSTEP 3 ===================================\n`);
 	console.log(`- Alice performing allowance transfer from Treasury to Bob...\n`);
-	const sendBal = 45; // Spender must generate the TX ID or be the client
-	const allowanceSendFtRx = await transfers.ftAllowanceFcn(tokenId, treasuryId, bobId, sendBal, aliceId, aliceKey, client);
-	console.log(`- Allowance transfer status: ${allowanceSendFtRx.status} \n`);
+
+	const allowanceSendFtParams = new ContractFunctionParameters()
+		.addAddress(tokenAddressSol)
+		.addAddress(treasuryId.toSolidityAddress())
+		.addAddress(bobId.toSolidityAddress())
+		.addUint256(10);
+
+	client.setOperator(aliceId, aliceKey);
+	const allowanceSendFtRec = await contracts.executeContractFcn(contractId, "ftTransferApproved", allowanceSendFtParams, gasLim, client);
+	client.setOperator(operatorId, operatorKey);
+	console.log(`- Contract call for approved FT transfer: ${allowanceSendFtRec.receipt.status}`);
+
+	const [allowanceSendFtInfo, allowanceSendFtExpUrl] = await queries.mirrorTxQueryFcn(allowanceSendFtRec.transactionId);
+	console.log(`- See details: ${allowanceSendFtExpUrl} \n`);
 
 	await queries.balanceCheckerFcn(treasuryId, tokenId, client);
 	await queries.balanceCheckerFcn(aliceId, tokenId, client);
@@ -63,10 +95,19 @@ async function main() {
 	// STEP 4 ===================================
 	console.log(`\nSTEP 4 ===================================\n`);
 	console.log(`- Treasury deleting fungible token allowance for Alice...\n`);
+
 	allowBal = 0;
-	const allowanceDeleteFtRx = await approvals.ftAllowanceFcn(tokenId, treasuryId, aliceId, allowBal, treasuryKey, client);
-	console.log(`- Allowance deletion status: ${allowanceDeleteFtRx.status}`);
-	console.log(`- https://testnet.mirrornode.hedera.com/api/v1/accounts/${treasuryId}/allowances/tokens`);
+	const allowanceDeleteFtParams = new ContractFunctionParameters()
+		.addAddress(tokenAddressSol)
+		.addAddress(aliceId.toSolidityAddress())
+		.addUint256(allowBal);
+
+	client.setOperator(treasuryId, treasuryKey);
+	const allowanceDeleteFtRec = await contracts.executeContractFcn(contractId, "approveFt", allowanceDeleteFtParams, gasLim, client);
+	client.setOperator(operatorId, operatorKey);
+
+	console.log(`- Contract call for FT allowance deletion: ${allowanceDeleteFtRec.receipt.status}`);
+	console.log(`- See details: https://testnet.mirrornode.hedera.com/api/v1/accounts/${treasuryId}/allowances/tokens`);
 
 	console.log(`
 ====================================================

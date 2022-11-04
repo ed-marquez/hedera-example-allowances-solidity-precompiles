@@ -1,4 +1,4 @@
-import { ContractCreateFlow, ContractExecuteTransaction, TransactionId } from "@hashgraph/sdk";
+import { ContractCreateFlow, ContractExecuteTransaction } from "@hashgraph/sdk";
 
 export async function deployContractFcn(bytecode, gasLim, client) {
 	const contractCreateTx = new ContractCreateFlow().setBytecode(bytecode).setGas(gasLim);
@@ -12,6 +12,6 @@ export async function deployContractFcn(bytecode, gasLim, client) {
 export async function executeContractFcn(cId, fcnName, params, gasLim, client) {
 	const contractExecuteTx = new ContractExecuteTransaction().setContractId(cId).setGas(gasLim).setFunction(fcnName, params);
 	const contractExecuteSubmit = await contractExecuteTx.execute(client);
-	const contractExecuteRx = await contractExecuteSubmit.getReceipt(client);
-	return contractExecuteRx;
+	const contractExecuteRec = await contractExecuteSubmit.getRecord(client);
+	return contractExecuteRec;
 }
