@@ -2,11 +2,11 @@
 pragma solidity ^0.8.11;
 pragma experimental ABIEncoderV2;
 
-import "./hip-206/HederaTokenService.sol";
-import "./hip-206/HederaResponseCodes.sol";
-import "./hip-206/ExpiryHelper.sol";
-import "./hip-206/FeeHelper.sol";
-import "./hip-206/KeyHelper.sol";
+import "./hts-precompiles/HederaTokenService.sol";
+import "./hts-precompiles/HederaResponseCodes.sol";
+import "./hts-precompiles/ExpiryHelper.sol";
+import "./hts-precompiles/FeeHelper.sol";
+import "./hts-precompiles/KeyHelper.sol";
 
 contract ApproveAllowances is HederaTokenService {
     address htsPrecompiles = address(0x167);
