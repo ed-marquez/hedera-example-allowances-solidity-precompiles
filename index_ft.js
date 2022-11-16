@@ -21,7 +21,7 @@ async function main() {
 	console.log(`- Creating Hedera accounts, HTS token, and contract...\n`);
 
 	// Accounts
-	const initBalance = new Hbar(10);
+	const initBalance = new Hbar(15);
 	const treasuryKey = PrivateKey.generateED25519();
 	const [treasurySt, treasuryId] = await accountCreateFcn(treasuryKey, initBalance, client);
 	console.log(`- Treasury's account: https://hashscan.io/#/testnet/account/${treasuryId}`);
